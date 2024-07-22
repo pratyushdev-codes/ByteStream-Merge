@@ -1,21 +1,30 @@
-const { nextui } = require("@nextui-org/react");
-
-
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-    "./node_modules/@nextui-org/theme/dist/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ["./src/**/*.{html,js,jsx}"],
   theme: {
-    extend: {
-      fontFamily: {
-        inter: ['Inter', 'sans-serif'], // Replace with your font file path if self-hosting
+    colors: {
+      bgColor: "rgb(var(--color-bg) / <alpha-value>)",
+      primary: "rgb(var(--color-primary) / <alpha-value>)",
+      secondary: "rgb(var(--color-secondary) / <alpha-value>)",
+      blue: "rgb(var(--color-blue) / <alpha-value>)",
+      white: "rgb(var(--color-white) / <alpha-value>)",
+      ascent: {
+        1: "rgb(var(--color-ascent1) / <alpha-value>)",
+        2: "rgb(var(--color-ascent2) / <alpha-value>)",
       },
     },
-  },
-  darkMode: "class",
-  plugins: [nextui()],
-}
+    screens: {
+      sm: "640px",
 
+      md: "768px",
+
+      lg: "1024px",
+
+      xl: "1280px",
+
+      "2xl": "1536px",
+    },
+    extend: {},
+  },
+  plugins: [],
+};
