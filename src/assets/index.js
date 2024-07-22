@@ -1,3 +1,6 @@
 import NoProfile from "./userprofile.png";
 import BgImage from "./img.jpeg";
-export { NoProfile, BgImage };
+import {dummyUser} from './data.js'
+import TopBar from "./TopBar";
+import ProfileCard from "./ProfileCard";
+export { NoProfile, BgImage, dummyUser,TopBar , ProfileCard};
