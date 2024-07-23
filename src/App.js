@@ -20,7 +20,7 @@ function Layout(){
 function App() {
   
   return (
-    <div  className="w-full min-h-[100vh]">
+    <div bg-black text-white className="w-full min-h-[100vh]">
       {/*The data-theme attribute is used to set the theme of the application. It is set to the value of the theme property from the Redux store. Refer - https://dev.to/ditarahma08/dark-mode-with-css-variable-1p57*/}
       <Routes>
         <Route element={<Layout/>}>
