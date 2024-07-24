@@ -33,7 +33,7 @@ const Login = () => {
               <TbSocial />
             </div>
             <span className='text-2xl text-[#065ad8] font-semibold'>
-              Byte Stream
+              ShareFun
             </span>
           </div>
 
@@ -96,7 +96,6 @@ const Login = () => {
             ) : (
               <CustomButton
                 type='submit'
-             
                 containerStyles={`inline-flex justify-center rounded-md bg-blue px-8 py-3 text-sm font-medium text-white outline-none`}
                 title='Login'
               />
@@ -134,17 +133,16 @@ const Login = () => {
 
             <div className='absolute flex items-center gap-1 bg-white left-12 bottom-6 py-2 px-5 rounded-full'>
               <AiOutlineInteraction />
-              <span className='text-xs font-medium'>
-              colleagues</span>
+              <span className='text-xs font-medium'>Interact</span>
             </div>
-          </div>.
+          </div>
 
           <div className='mt-16 text-center'>
             <p className='text-white text-base'>
-              Connect and build products &nbsp; 🚀
+              Connect with friends & have share for fun
             </p>
             <span className='text-sm text-white/80'>
-              Collaborate , Meet , Plan , Share and develop for the world.
+              Share memories with friends and the world.
             </span>
           </div>
         </div>

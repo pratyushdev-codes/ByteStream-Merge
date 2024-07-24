@@ -1,5 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { dummyUser } from "../assets";
+
 const initialState = {
     user: JSON.parse(window?.localStorage.getItem('user')) ?? dummyUser,
     edit: false
@@ -17,7 +18,9 @@ const userSlice = createSlice({
             state.user = null;
             localStorage.removeItem('user');
         },
-       
+        updateProfile(state, action){
+            state.edit = action.payload;
+        }
     }
 })
 
@@ -33,4 +36,8 @@ export function Logout(){
         dispatch(userSlice.actions.logout());
     }
 }
-
+export function UpdateProfile(val){
+    return(dispatch, getState) => {
+        dispatch(userSlice.actions.updateProfile(val));
+    }
+}
