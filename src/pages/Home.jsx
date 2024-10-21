@@ -255,7 +255,9 @@ const Home = () => {
       </div>
 
       {edit && <EditProfile />}
+      
       </>
+      
   )
 }
 
