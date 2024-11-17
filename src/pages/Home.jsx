@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useSelector } from "react-redux";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   CustomButton,
   EditProfile,
@@ -10,17 +10,20 @@ import {
   TextInput,
   TopBar,
 } from "../components";
-import { suggest, requests, posts } from "../assets/data";
-import { Link } from "react-router-dom";
+import {apiRequest, deletePost, fetchPosts, getUserInfo, handleFileUpload, handleView, likePost, sendFriendRequest} from "../utils/index.js";
+import { useNavigate } from "react-router-dom";
 import { NoProfile } from "../assets";
 import { BsFiletypeGif, BsPersonFillAdd } from "react-icons/bs";
 import { BiImages, BiSolidVideo } from "react-icons/bi";
 import { useForm } from "react-hook-form";
+import { userLogin } from "../redux/userSlice.js";
+import { Link } from "react-router-dom";
 const Home = () => {
 
   const { user, edit } = useSelector((state) => state.user);
-  const [friendRequest, setFriendRequest] = useState(requests);
-  const [suggestedFriends, setSuggestedFriends] = useState(suggest);
+  const [friendRequest, setFriendRequest] = useState([]);
+  const {posts} = useSelector((state) => state.posts);
+  const [suggestedFriends, setSuggestedFriends] = useState([]);
   const [errMsg, setErrMsg] = useState("");
   const [file, setFile] = useState(null);
   const [posting, setPosting] = useState(false);
@@ -29,10 +32,166 @@ const Home = () => {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm();
 
-  const handlePostSubmit = async (data) => {};
+  const dispatch = useDispatch();
+  
+  const getUser = async() => {
+
+    const res = await getUserInfo(user?.token);
+    const newData = {token: user?.token, ...res}
+    dispatch(userLogin(newData));
+
+  }
+
+  const fetchPost = async() => {
+
+    await fetchPosts(user?.token, dispatch);
+    setLoading(false);
+
+  }
+
+  const handlePostSubmit = async (data) => {
+
+    setPosting(true);
+    setErrMsg("");
+
+    try {
+      
+      const uri = file && (await handleFileUpload(file));
+      const newData = uri ? {...data, image:uri} : data;
+      //If an image is existing in post then, we append that image to the post data which already includes the post info such as description, user, and time.
+
+      const res = await apiRequest({
+        url: "posts/create-post",
+        data: newData,
+        token: user?.token,
+        method: "POST"
+      });
+
+
+            if(res?.status === 'failed'){
+        setErrMsg(res);
+      }
+      else{
+        setErrMsg("");
+        reset({description:""});
+        setFile(null);
+        await fetchPost();
+      }
+      
+      setPosting(false);
+
+    } catch (error) {
+      console.log(error)
+      setPosting(false);
+      setErrMsg(error);
+    }
+
+  };
+  const handleLikePost = async(uri) => {
+
+    await likePost({uri:uri, token:user?.token});
+    await fetchPost();
+
+  }
+  const handleDelete = async(id) => {
+
+    await deletePost(id, user?.token);
+    await fetchPost();  
+
+  }
+  const fetchFriendRequests = async() => {
+
+    try {
+          const res = await apiRequest({
+            url: "/users/get-friend-request/",
+            method: "POST",
+            token: user?.token,
+          });
+
+          setFriendRequest(res?.data);
+        } catch (error) {
+          console.log(error);
+        }
+
+  }
+  const fetchSuggestedFriends = async() => {
+
+    try {
+          const res = await apiRequest({
+            url: "/users/suggested-friends/",
+            token: user?.token,
+            method: "POST",
+          });
+          setSuggestedFriends(res?.data);
+        } catch (error) {
+          console.log(error);
+        }
+
+  }
+  const handleFriendRequest = async(id) => {
+
+    try {
+      await sendFriendRequest(user.token, id);
+        await fetchSuggestedFriends();
+        await fetchFriendRequests();
+        getUser();
+      } 
+    catch (error) {
+    console.log(error);
+      }
+  }
+  
+  const acceptFriendRequest = async(id, status) => {
+
+    try {
+      
+      await apiRequest({
+        url: "/users/accept-request/",
+        token: user?.token,
+        method: "POST",
+        data: {
+          rid: id,
+          status
+        }
+      });
+
+        await fetchSuggestedFriends();
+        await fetchFriendRequests();
+      getUser();
+    } catch (error) {
+      console.log(error);
+    }
+
+  }
+  useEffect(() => {
+    setLoading(true);
+    getUser();
+    fetchPost();
+    fetchFriendRequests();
+    fetchSuggestedFriends();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    getUser();
+    fetchPost();
+    fetchFriendRequests();
+    fetchSuggestedFriends();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [edit]);
+
+//Edit is a state in userSlice which is set to true when the user clicks the edit button in ProfileCard. When the edit state changes, the useEffect hook will run again and fetch the user data from the server. For example - when user updates profile picture then after updating, edit will become false, so if we again fetch posts, the post which this user itself had posted will come with updated profile picture otherwise it will come with the old profile picture.
+
+// useEffect hook here is to set the loading state to true initially and then fetch user data, posts, friend requests, and suggested friends from the server when the component renders.
+
+// When the component mounts or when the edit state changes, the useEffect runs.
+
+  const navigate = useNavigate();
 
   return (
     <>
@@ -45,7 +204,61 @@ const Home = () => {
           <FriendsCard friends={user?.friends}/>
         </div>
          {/* CENTER */}
-          <div className='flex-1 h-full px-4 flex flex-col gap-6 overflow-y-auto rounded-lg'>
+         <div className='flex-1 h-full px-4 flex flex-col gap-6 overflow-y-auto rounded-lg'>
+
+{/* Activity Center Heading */}
+<div className="w-full py-3 md:py-6 px-4 bg-primary bg-[url('./images/grad1.png')] rounded-lg text-[blue]">
+<p
+  className='text-xl md:text-2xl text-white font-semibold'
+  style={{
+    background: 'linear-gradient(135deg, #DDE6E8, #3398DB)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+  }}
+>
+  Dynamic Space
+</p>
+
+  <div className="flex gap-6 justify-center mt-4">
+  <div
+className="recording flex gap-3 items-center  text-ascent-1 text-lg md:text-lg border-[white]  rounded-2xl p-4 bg-white bg-opacity-20 backdrop-blur-md"
+><div className="hidden lg:flex bg-[white] w-12 h-9 rounded-full text-white items-center justify-center">
+<i class="fa-solid fa-square blink" style={{color:"#ff3737", scale:"0.9"}}></i><br/>
+</div>
+
+   <span className="text-sm font-medium">3 Connections in ByteMeet</span>
+</div>
+
+
+<div
+className="recording  gap-3 items-center hidden lg:flex  text-ascent-1 text-lg md:text-lg border-[white]  rounded-2xl p-4 bg-white bg-opacity-20 backdrop-blur-md"
+>
+<i class="fa-solid fa-file" style={{color:"#045AD8", scale:"1.5"}}></i><br/>
+
+   <span className="text-sm font-medium">6 are editing ByteDoc</span>
+</div>
+
+
+
+<div
+className="recording flex gap-3 items-center  text-ascent-1 text-lg md:text-lg border-[white]  rounded-2xl p-4 bg-white bg-opacity-20 backdrop-blur-md"
+>
+
+<i class="fa-solid fa-cloud-arrow-up " style={{color:"#045AD8", scale:"1.2"}}></i><br/>
+   <span className="text-sm font-medium">Upload Media to ByteCloud</span>
+</div>
+
+  </div>
+</div>
+
+
+{/* Recording Section */}
+
+
+
+
+
+          
             <form
               onSubmit={handleSubmit(handlePostSubmit)}
               className='bg-primary px-4 rounded-lg'
@@ -127,6 +340,15 @@ const Home = () => {
                   <BsFiletypeGif />
                   <span>Gif</span>
                 </label>
+                <div>
+    <CustomButton
+
+        title='Summarize with AI'
+   containerStyles='bg-[linear-gradient(to_right,#a1c4fd_0%,#c2e9fb_51%,#a1c4fd_100%)] text-[grey] py-1 px-4 rounded-full font-semibold text-sm'
+    />
+</div>
+
+
 
                 <div>
                   {posting ? (
@@ -135,12 +357,15 @@ const Home = () => {
                     <CustomButton
                       type='submit'
                       title='Post'
-                      containerStyles='bg-[#0444a4] text-white py-1 px-6 rounded-full font-semibold text-sm'
+                      containerStyles='bg-white text-blue py-1 px-6 rounded-full font-semibold text-sm'
                     />
                   )}
                 </div>
               </div>
             </form>
+
+          
+            
 
             {loading ? (
               <Loading />
@@ -165,8 +390,8 @@ const Home = () => {
         <div className='hidden w-1/4 h-full lg:flex flex-col gap-8 overflow-y-auto'>
             {/* FRIEND REQUEST */}
             <div className='w-full bg-primary shadow-sm rounded-lg px-6 py-5'>
-              <div className='flex items-center justify-between text-xl text-ascent-1 pb-2 border-b border-[#66666645]'>
-                <span> Friend Request</span>
+              <div className='flex items-center justify-between text-xl text-ascent-1 pb-2 border-b border-[#66666645]  '>
+                <span>Stream Request &nbsp; <i className="fa-solid fa-code-pull-request " style={{scale:"0.9"}}></i></span>
                 <span>{friendRequest?.length}</span>
               </div>
 
@@ -195,7 +420,7 @@ const Home = () => {
                     <div className='flex gap-1'>
                       <CustomButton
                         title='Accept'
-                        containerStyles='bg-[#0444a4] text-xs text-white px-1.5 py-1 rounded-full'
+                        containerStyles='bg-white text-xs text-[#045AD8] px-1.5 py-1 rounded-full'
                       />
                       <CustomButton
                         title='Deny'
@@ -210,7 +435,7 @@ const Home = () => {
             {/* SUGGESTED FRIENDS */}
             <div className='w-full bg-primary shadow-sm rounded-lg px-5 py-5'>
               <div className='flex items-center justify-between text-lg text-ascent-1 border-b border-[#66666645]'>
-                <span>Friend Suggestion</span>
+                <span>Stream Suggestions &nbsp;<i class="fa-solid fa-user-plus" style={{scale:"0.9"}}></i> </span>
               </div>
               <div className='w-full flex flex-col gap-4 pt-4'>
                 {suggestedFriends?.map((friend) => (
